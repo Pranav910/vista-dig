@@ -149,7 +149,7 @@
   
   .glow-effect::before {
     content: '';
-    @apply absolute inset-0 rounded-inherit opacity-0 transition-opacity duration-300;
+    @apply absolute inset-0 rounded-lg opacity-0 transition-opacity duration-300;
     background: var(--gradient-glow);
     z-index: -1;
   }
