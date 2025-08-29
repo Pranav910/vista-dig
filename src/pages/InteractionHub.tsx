@@ -1,62 +1,78 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Send, Paperclip, Globe, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { SourcesPanel } from "@/components/SourcesPanel";
 import { MessageBubble } from "@/components/MessageBubble";
-
-interface Message {
-  id: string;
-  content: string;
-  role: 'user' | 'assistant';
-  timestamp: Date;
-}
+import { useAuth } from "@/hooks/useAuth";
+import { useChat } from "@/hooks/useChat";
+import { useNavigate } from "react-router-dom";
 
 const InteractionHub = () => {
   const [message, setMessage] = useState("");
   const [isSourcesVisible, setIsSourcesVisible] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      content: "Hello! I'm your AI web scraping assistant. You can ask me to extract data from any website. Just provide a URL or describe what information you need.",
-      role: "assistant",
-      timestamp: new Date()
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const { 
+    chatRooms, 
+    currentRoom, 
+    messages, 
+    loading: chatLoading,
+    createNewChat, 
+    sendMessage, 
+    switchToRoom 
+  } = useChat(user?.id);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
     }
-  ]);
+  }, [user, loading, navigate]);
 
-  const handleSendMessage = () => {
-    if (!message.trim()) return;
+  useEffect(() => {
+    // Auto-create first chat if user has no rooms
+    if (user && chatRooms.length === 0 && !chatLoading) {
+      handleNewChat();
+    }
+  }, [user, chatRooms, chatLoading]);
 
-    // Add user message
-    const userMessage = {
-      id: Date.now().toString(),
-      content: message,
-      role: "user" as const,
-      timestamp: new Date()
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
-    setMessage("");
-
-    // Simulate AI response with sources
-    setTimeout(() => {
-      const aiResponse = {
-        id: (Date.now() + 1).toString(),
-        content: "I'll help you scrape that data. Let me access the website and extract the information you need.",
-        role: "assistant" as const,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, aiResponse]);
-      setIsSourcesVisible(true);
-    }, 1000);
+  const handleNewChat = async () => {
+    const newRoom = await createNewChat();
+    if (newRoom) {
+      await switchToRoom(newRoom);
+    }
   };
+
+  const handleSendMessage = async () => {
+    if (!message.trim() || !currentRoom) return;
+
+    await sendMessage(message, currentRoom.id);
+    setMessage("");
+    setIsSourcesVisible(true);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="chat-container">
       {/* Left Sidebar - Chat History */}
-      <ChatSidebar />
+      <ChatSidebar 
+        chatRooms={chatRooms}
+        currentRoom={currentRoom}
+        onNewChat={handleNewChat}
+        onRoomSelect={switchToRoom}
+      />
 
       {/* Main Chat Area */}
       <div className="chat-main">
@@ -65,7 +81,9 @@ const InteractionHub = () => {
           <div className="flex items-center gap-3">
             <Globe className="h-6 w-6 text-primary" />
             <div>
-              <h2 className="font-semibold">Web Scraping Assistant</h2>
+              <h2 className="font-semibold">
+                {currentRoom ? currentRoom.name : "Web Scraping Assistant"}
+              </h2>
               <p className="text-sm text-muted-foreground">AI-powered data extraction</p>
             </div>
           </div>
@@ -79,9 +97,27 @@ const InteractionHub = () => {
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
-          {messages.map((msg) => (
-            <MessageBubble key={msg.id} message={msg} />
-          ))}
+          {messages.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center text-muted-foreground">
+                <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-medium mb-2">Start a conversation</h3>
+                <p>Ask me to scrape data from any website or analyze web content.</p>
+              </div>
+            </div>
+          ) : (
+            messages.map((msg) => (
+              <MessageBubble 
+                key={msg.id} 
+                message={{
+                  id: msg.id,
+                  content: msg.content,
+                  role: msg.role,
+                  timestamp: new Date(msg.created_at)
+                }} 
+              />
+            ))
+          )}
         </div>
 
         {/* Input Area */}
@@ -106,7 +142,7 @@ const InteractionHub = () => {
               </div>
               <Button
                 onClick={handleSendMessage}
-                disabled={!message.trim()}
+                disabled={!message.trim() || !currentRoom}
                 className="shrink-0 glow-effect"
               >
                 <Send className="h-4 w-4" />

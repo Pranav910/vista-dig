@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import InteractionHub from "./pages/InteractionHub";
 import MetricsCenter from "./pages/MetricsCenter";
 import NotFound from "./pages/NotFound";
+import Auth from "./pages/Auth";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
           <Navigation />
           <Routes>
             <Route path="/" element={<Navigate to="/chat" replace />} />
+            <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/chat" element={<InteractionHub />} />
             <Route path="/metrics" element={<MetricsCenter />} />

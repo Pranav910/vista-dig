@@ -1,11 +1,13 @@
-import { NavLink, useLocation } from "react-router-dom";
-import { BarChart3, MessageSquare, Activity, Settings, Menu } from "lucide-react";
+import { NavLink, useLocation, Link } from "react-router-dom";
+import { BarChart3, MessageSquare, Activity, Settings, Menu, LogOut, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Navigation = () => {
   const location = useLocation();
+  const { user, signOut } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
@@ -21,7 +23,7 @@ export const Navigation = () => {
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <Activity className="h-5 w-5 text-primary-foreground" />
+              <Globe className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
               <h1 className="font-bold text-lg gradient-text">ScrapeMaster</h1>
@@ -51,13 +53,25 @@ export const Navigation = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="glow-effect">
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
-          </Button>
-          <Button size="sm" className="bg-gradient-primary text-primary-foreground">
-            Connect Supabase
-          </Button>
+          {user ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={signOut}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+            >
+              <Link to="/auth">Sign In</Link>
+            </Button>
+          )}
         </div>
       </nav>
 
@@ -65,7 +79,7 @@ export const Navigation = () => {
       <nav className="md:hidden flex items-center justify-between p-4 border-b border-border bg-surface/50 backdrop-blur-sm">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-            <Activity className="h-5 w-5 text-primary-foreground" />
+            <Globe className="h-5 w-5 text-primary-foreground" />
           </div>
           <h1 className="font-bold gradient-text">ScrapeMaster</h1>
         </div>
